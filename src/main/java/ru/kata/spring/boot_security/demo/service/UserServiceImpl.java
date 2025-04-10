@@ -10,6 +10,7 @@ import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.security.UserDetailServiceImpl;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -29,15 +30,15 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public void setRoles(User user, List<Long> selectedRoleIds) {
+    public void setRoles(User user, Set<Long> selectedRoleIds) {
         userDetailService.setRoles(user, selectedRoleIds);
     }
 
     @Override
-    public void save(User user) {
+    public User save(User user) {
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encodedPassword);
-        userDetailService.save(user);
+        return userDetailService.save(user);
     }
 
     @Override
@@ -46,8 +47,8 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public void update(User user) {
-        userDetailService.update(user);
+    public User update(User user, Long id) {
+        return userDetailService.update(user, id);
     }
 
     @Override

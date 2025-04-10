@@ -9,14 +9,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
+import ru.kata.spring.boot_security.demo.repositories.RoleRepository;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 import ru.kata.spring.boot_security.demo.service.RoleService;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,12 +28,12 @@ public class UserDetailServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RoleService roleService;
+    private final RoleRepository roleRepository;
 
-    public UserDetailServiceImpl(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, RoleService roleService) {
+    public UserDetailServiceImpl(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.roleService = roleService;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -43,10 +46,10 @@ public class UserDetailServiceImpl implements UserDetailsService {
     }
 
 
-    public void save(User user) {
+    public User save(User user) {
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encodedPassword);
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
 
@@ -58,32 +61,35 @@ public class UserDetailServiceImpl implements UserDetailsService {
     }
 
 
-    public void update(User user) {
-        User existingUser = userRepository.findById(user.getId())
+    public User update(User user, Long id) {
+        User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         existingUser.setUsername(user.getUsername());
         existingUser.setEmail(user.getEmail());
         existingUser.setFirstName(user.getFirstName());
         existingUser.setLastName(user.getLastName());
         existingUser.setAge(user.getAge());
-        existingUser.setRoles(user.getRoles());
-        if (!user.getPassword().isEmpty()) {
+        if (user.getRoleIds() != null && !user.getRoleIds().isEmpty()) {
+            List<Role> roles = roleRepository.findAllById(user.getRoleIds());
+            if (roles.size() != user.getRoleIds().size()) {
+                throw new IllegalArgumentException("Some roles not found");
+            }
+            existingUser.getRoles().clear(); // Очищаем текущие роли
+            existingUser.getRoles().addAll(roles); // Добавляем новые
+        }
+
+        if (user.getPassword() != null) {
             existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-        userRepository.save(existingUser);
+        return userRepository.save(existingUser);
     }
 
-    public void setRoles(User user, List<Long> selectedRoleIds) {
-        Collection<Role> roles;
-        if (selectedRoleIds == null || selectedRoleIds.isEmpty()) {
-            roles = Collections.singletonList(roleService.findByName("ROLE_USER"));
-        } else {
-            roles = selectedRoleIds.stream()
-                    .map(roleService::findById)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect(Collectors.toList());
-        }
+    public void setRoles(User user, Set<Long> selectedRoleIds) {
+        Collection<Role> roles = selectedRoleIds.stream()
+                .map(roleRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
         user.setRoles(roles);
     }
 
