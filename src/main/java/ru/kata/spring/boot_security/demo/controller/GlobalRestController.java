@@ -6,27 +6,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
 import javax.validation.Valid;
-import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -41,26 +34,30 @@ public class GlobalRestController {
         this.userRepository = userRepository;
     }
 
+    //Все пользователи
     @ResponseBody
     @GetMapping("/api/rest")
     public List<User> getAllUsers() {
         return userService.getAll();
     }
 
+    //Текущий аутентифицированный пользователь
     @GetMapping("/api/rest/current-user")
     @ResponseBody
     public User getCurrentUser(Authentication authentication) {
-        // Получаем username текущего аутентифицированного пользователя
         String username = authentication.getName();
         return userRepository.findByUsername(username);
     }
 
+    //Получение пользователя по его ID
     @ResponseBody
     @GetMapping("/api/rest/{id}")
     public User getUserById(@PathVariable Long id) {
         return userService.getById(id);
     }
 
+
+    //Отправка пользователя
     @PostMapping("/api/rest")
     @ResponseBody
     public ResponseEntity<?> createUser(@RequestBody @Valid User user) {
@@ -76,6 +73,7 @@ public class GlobalRestController {
         }
     }
 
+    //Удаление пользователя по его ID
     @DeleteMapping("/api/rest/{id}")
     @ResponseBody
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
@@ -83,6 +81,8 @@ public class GlobalRestController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+
+    //Обновление пользователя по его ID
     @ResponseBody
     @PutMapping("/api/rest/{id}")
     public ResponseEntity<?> updateUser(@RequestBody @Valid User user, @PathVariable Long id, BindingResult bindingResult) {
@@ -103,38 +103,28 @@ public class GlobalRestController {
         return ResponseEntity.ok(updateUser);
     }
 
+    //Админская страница
     @GetMapping("/admin")
     public String index() {
         return "admin";
     }
 
+    //Юзерная страница
     @GetMapping("/user")
     public String indexUser() {
         return "user";
     }
 
-    @ResponseBody
-    @GetMapping("/api/rest/user")
-    public ResponseEntity<?> getUserByUsername(Principal principal) {
-        User user = userRepository.findByUsername(principal.getName());
-        return ResponseEntity.ok(user);
-    }
-
+    //Получение пользователей в зависимости от роли аутентифицированного пользователя
     @ResponseBody
     @GetMapping("/api/rest/visible-users")
     public ResponseEntity<List<User>> getVisibleUsers(Authentication authentication) {
-        // Получаем текущего пользователя
         User currentUser = userRepository.findByUsername(authentication.getName());
-
-        // Проверяем, является ли пользователь админом
         boolean isAdmin = currentUser.getRoles().stream()
                 .anyMatch(role -> role.getName().equals("ROLE_ADMIN"));
-
         if (isAdmin) {
-            // Для админа возвращаем всех пользователей
             return ResponseEntity.ok(userRepository.findAll());
         } else {
-            // Для обычного пользователя возвращаем только его самого
             return ResponseEntity.ok(Collections.singletonList(currentUser));
         }
     }

@@ -1,5 +1,6 @@
+// Функция для информации о текущем пользователе на хедере
 function loadCurrentUserInfo() {
-    fetch('/api/rest/current-user')  // Нужно создать этот endpoint
+    fetch('/api/rest/current-user')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Ошибка загрузки данных пользователя');
@@ -9,7 +10,6 @@ function loadCurrentUserInfo() {
         .then(user => {
             const userInfoDiv = document.getElementById('userInfo');
 
-            // Создаем элементы для отображения информации
             const usernameSpan = document.createElement('span');
             usernameSpan.className = 'navbar-brand me-1 ps-2 h1';
             usernameSpan.textContent = user.username;
@@ -18,7 +18,6 @@ function loadCurrentUserInfo() {
             rolesSpan.className = 'navbar-brand';
             rolesSpan.textContent = `with roles: ${user.roles.map(r => r.name.replace('ROLE_', '')).join(', ')}`;
 
-            // Очищаем и добавляем новые элементы
             userInfoDiv.innerHTML = '';
             userInfoDiv.appendChild(usernameSpan);
             userInfoDiv.appendChild(rolesSpan);
@@ -32,7 +31,7 @@ function loadCurrentUserInfo() {
 document.getElementById('logoutBtn').addEventListener('click', function(e) {
     e.preventDefault();
 
-    // Получаем CSRF токен
+    // CSRF токен
     const csrfToken = document.querySelector('meta[name="_csrf"]').content;
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
@@ -45,7 +44,7 @@ document.getElementById('logoutBtn').addEventListener('click', function(e) {
     })
         .then(response => {
             if (response.redirected) {
-                window.location.href = response.url;  // Перенаправляем на страницу логина
+                window.location.href = response.url;
             }
         })
         .catch(error => {
@@ -53,7 +52,6 @@ document.getElementById('logoutBtn').addEventListener('click', function(e) {
         });
 });
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     loadCurrentUserInfo();
 });

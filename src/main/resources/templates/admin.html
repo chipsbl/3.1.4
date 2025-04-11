@@ -19,7 +19,7 @@
     <nav class="navbar navbar-dark bg-dark">
         <div class="container-fluid">
             <div class="justify-content-start" id="userInfo">
-                <!-- Будет заполнено через JavaScript -->
+                <!-- Функция JS -->
             </div>
             <div>
                 <a class="navbar-brand text-white-50" href="#" id="logoutBtn">Logout</a>
@@ -76,7 +76,7 @@
                                 <th scope="col">Delete</th>
                             </tr>
                             </thead>
-                            <tbody></tbody> <!-- Сюда будем вставлять данные через JS -->
+                            <tbody><!-- Функция JS --></tbody>
                         </table>
                         <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog">
@@ -93,13 +93,15 @@
                                                 <input type="hidden" id="editUserId">
                                                 <div class="mb-3 text-center h1 fs-5">
                                                     <label for="editFirstName" class="form-label">First name</label>
-                                                    <input type="text" class="form-control w-50 mx-auto" id="editFirstName"
+                                                    <input type="text" class="form-control w-50 mx-auto"
+                                                           id="editFirstName"
                                                            name="firstName">
                                                     <div class="invalid-feedback" style="display: none;"></div>
                                                 </div>
                                                 <div class="mb-3 text-center h1 fs-5">
                                                     <label for="editLastName" class="form-label">Last name</label>
-                                                    <input type="text" class="form-control w-50 mx-auto" id="editLastName"
+                                                    <input type="text" class="form-control w-50 mx-auto"
+                                                           id="editLastName"
                                                            name="lastName">
                                                     <div class="invalid-feedback" style="display: none;"></div>
                                                 </div>
@@ -111,22 +113,26 @@
                                                 </div>
                                                 <div class="mb-3 text-center h1 fs-5">
                                                     <label for="editAge" class="form-label">Age</label>
-                                                    <input type="number" class="form-control w-50 mx-auto" id="editAge" name="age">
+                                                    <input type="number" class="form-control w-50 mx-auto" id="editAge"
+                                                           name="age">
                                                     <div class="invalid-feedback" style="display: none;"></div>
                                                 </div>
                                                 <div class="mb-3 text-center h1 fs-5">
                                                     <label for="editUsername" class="form-label">Username</label>
-                                                    <input type="text" class="form-control w-50 mx-auto" id="editUsername"
+                                                    <input type="text" class="form-control w-50 mx-auto"
+                                                           id="editUsername"
                                                            name="username">
                                                     <div class="invalid-feedback" style="display: none;"></div>
                                                 </div>
                                                 <div class="mb-3 text-center h1 fs-5">
                                                     <label for="editPassword" class="form-label">Password</label>
-                                                    <input type="password" class="form-control w-50 mx-auto" id="editPassword"
+                                                    <input type="password" class="form-control w-50 mx-auto"
+                                                           id="editPassword"
                                                            name="password">
                                                     <div class="invalid-feedback" style="display: none;"></div>
                                                 </div>
-                                                <select class="form-select w-50 mx-auto" id="editRoles" size="2" multiple>
+                                                <select class="form-select w-50 mx-auto" id="editRoles" size="2"
+                                                        multiple>
                                                     <label for="editRoles" class="form-label">Роли</label>
                                                     <option value="1">ADMIN</option>
                                                     <option value="2">USER</option>
@@ -212,6 +218,7 @@
                     </div>
                 </div>
             </div>
+            <!-- Таб создания нового пользователя -->
             <div class="tab-pane fade" id="pills-new-user" role="tabpanel" aria-labelledby="pills-new-user-tab">
                 <nav class="navbar navbar-light bg-light">
                     <div class="container-fluid">
@@ -280,5 +287,6 @@
 <script src="/js/app.js"></script>
 <script src="/js/header.js"></script>
 <script src="/js/sidebar.js"></script>
+<script src="/js/notReload.js"></script>
 </body>
 </html>

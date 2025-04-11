@@ -1,53 +1,44 @@
-let editModal;
-
+let editModal; // Для модалки обновления
 document.addEventListener('DOMContentLoaded', () => {
-    loadUsers(); // Загружаем данные при открытии страницы
-});
-
-// Инициализация при полной загрузке страницы
-window.addEventListener('load', () => {
-    // 1. Проверяем, что Bootstrap загружен
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap не загружен!');
-        return;
-    }
-
-    // 2. Находим элемент модального окна
-    const modalElement = document.getElementById('editModal');
-    if (!modalElement) {
-        console.error('Элемент модального окна не найден!');
-        return;
-    }
-
-    // 3. Инициализируем модальное окно
-    editModal = new bootstrap.Modal(modalElement);
-
-    // 4. Загружаем пользователей
     loadUsers();
 });
 
-// Загрузка пользователей из REST API
+// Инициализация при полной загрузке страницы для модалки обновления
+window.addEventListener('load', () => {
+
+    const modalElement = document.getElementById('editModal');
+    if (!modalElement) {
+        console.error('Элемент модального окна не найден');
+        return;
+    }
+
+    editModal = new bootstrap.Modal(modalElement);
+
+    loadUsers();
+});
+
+// Загрузка всех пользователей для таблицы
 function loadUsers() {
     fetch('/api/rest')
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('Ошибка загрузки пользователей');
             }
             return response.json();
         })
         .then(users => {
-            renderUsersTable(users); // Отрисовываем таблицу
+            renderUsersTable(users);
         })
         .catch(error => {
-            console.error('Error loading users:', error);
+            console.error('Ошибка загрузки пользователей:', error);
         });
 }
 
-// Отрисовка таблицы
+// Загрузка таблицы и ее данных
 function renderUsersTable(users) {
     const tableBody = document.querySelector('#usersTable tbody');
-    tableBody.innerHTML = ''; // Очищаем старые данные
-    users.sort((a, b) => a.id - b.id);  // Сортировка по возрастанию ID
+    tableBody.innerHTML = '';
+    users.sort((a, b) => a.id - b.id);  // Для сортировки пользователей по айдишнику
 
     users.forEach(user => {
         const row = document.createElement('tr');
@@ -75,23 +66,16 @@ function renderUsersTable(users) {
 }
 
 
-// Пример функций для кнопок
+// Функция для редактирования пользователя
 async function editUser(id) {
     try {
-        // 1. Получаем элементы
         const editModalElement = document.getElementById('editModal');
         const editForm = document.getElementById('editUserForm');
 
-        if (!editModalElement || !editForm) {
-            throw new Error('Не найдены необходимые элементы');
-        }
-
-        // 2. Получаем данные пользователя
         const response = await fetch(`/api/rest/${id}`, {credentials: 'include'});
         if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
         const user = await response.json();
 
-        // 3. Заполняем форму
         document.getElementById('editUserId').value = user.id;
         document.getElementById('editFirstName').value = user.firstName;
         document.getElementById('editLastName').value = user.lastName;
@@ -99,32 +83,27 @@ async function editUser(id) {
         document.getElementById('editAge').value = user.age;
         document.getElementById('editUsername').value = user.username;
 
-        // 4. Настройка ролей
         const rolesSelect = document.getElementById('editRoles');
         if (rolesSelect) {
             const userRoleIds = user.roles.map(role => role.id);
 
-            // Устанавливаем selected для соответствующих ролей
             Array.from(rolesSelect.options).forEach(option => {
                 option.selected = userRoleIds.includes(parseInt(option.value));
             });
         }
 
-        // 5. Показываем модальное окно
         const editModal = new bootstrap.Modal(editModalElement);
         editModal.show();
 
-        // 6. Обработчик формы (после открытия модалки)
+        // Обработчик для редактирования пользователя (Сгружает данные из формы и обновляет юзера)
         editModalElement.addEventListener('shown.bs.modal', function () {
             editForm.onsubmit = async function (e) {
                 e.preventDefault();
 
                 try {
-                    // 1. Получаем CSRF-токен
                     const csrfToken = document.querySelector('meta[name="_csrf"]').content;
                     const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
 
-                    // 2. Собираем данные (ключевое изменение в формате ролей)
                     const formData = {
                         username: document.getElementById('editUsername').value.trim(),
                         email: document.getElementById('editEmail').value.trim(),
@@ -136,9 +115,6 @@ async function editUser(id) {
                         password: document.getElementById('editPassword').value || null
                     };
 
-                    console.log('Отправляемые данные:', formData); // Для отладки
-
-                    // 3. Отправка запроса
                     const response = await fetch(`/api/rest/${document.getElementById('editUserId').value}`, {
                         method: 'PUT',
                         headers: {
@@ -155,14 +131,14 @@ async function editUser(id) {
                             showValidationErrors(errorData, 'editUserForm');
                             return;
                         }
-                        // Для других ошибок показываем модальное окно
-                        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-                        document.getElementById('errorMessage').textContent = errorData.message || 'Произошла ошибка';
-                        errorModal.show();
                         return;
                     }
 
-                    location.reload();
+                    if (response.ok) {
+                        const updatedUser = await response.json();
+                        updateUserInTable(updatedUser); //Функция обновления таблицы после редактирования юзера из другого JS файла
+                        bootstrap.Modal.getInstance(editModalElement).hide();
+                    }
                 } catch (error) {
                     console.error('Ошибка:', error);
                     alert('Ошибка сохранения: ' + error.message);
@@ -176,18 +152,17 @@ async function editUser(id) {
     }
 }
 
-// Получаем CSRF-токен из cookies
+// Получение токена
 function getCsrfToken() {
     return document.cookie.split('; ')
         .find(row => row.startsWith('XSRF-TOKEN='))
         ?.split('=')[1];
 }
 
-// Обработчик отправки формы
+// Обработчик для отпрафки формы создания нового юзера
 document.getElementById('createUserForm').addEventListener('submit', function (e) {
-    e.preventDefault(); // Предотвращаем стандартную отправку
+    e.preventDefault();
 
-    // Собираем данные формы
     const userData = {
         firstName: document.getElementById('firstName').value,
         lastName: document.getElementById('lastName').value,
@@ -199,7 +174,6 @@ document.getElementById('createUserForm').addEventListener('submit', function (e
             .map(option => ({id: option.value}))
     };
 
-    // Отправляем данные на сервер
     fetch('/api/rest', {
         method: 'POST',
         headers: {
@@ -215,19 +189,18 @@ document.getElementById('createUserForm').addEventListener('submit', function (e
                     if (response.status === 400) {
                         console.log(errorData)
                         showValidationErrors(errorData);
+                        return null;
                     }
-                    throw new Error(errorData.message || 'Ошибка создания пользователя');
                 });
             }
             return response.json();
         })
         .then(data => {
-            // Очищаем форму
-            document.getElementById('createUserForm').reset();
-            // Переключаемся на вкладку с таблицей
-            new bootstrap.Tab(document.querySelector('#pills-users-tab')).show();
-            // Обновляем таблицу
-            loadUsers();
+            if (data) {                                // Условие что таб переключается только в случае успешного создания
+                document.getElementById('createUserForm').reset();
+                new bootstrap.Tab(document.querySelector('#pills-users-tab')).show();
+                loadUsers();
+            }
         })
         .catch(error => {
             console.error('Error:', error);
@@ -235,12 +208,10 @@ document.getElementById('createUserForm').addEventListener('submit', function (e
         });
 });
 
-// Функция для открытия модального окна с данными пользователя
+// Функция для открытия модалки с данными юзера для его удаления
 function deleteUser(userId) {
-    // Получаем данные пользователя (это может быть AJAX запрос или данные из таблицы)
-    const user = getUserData(userId); // Нужно реализовать эту функцию
+    const user = getUserData(userId);
 
-    // Заполняем форму в модальном окне
     document.getElementById('deleteId').value = user.id;
     document.getElementById('deleteFirstName').value = user.firstName;
     document.getElementById('deleteLastName').value = user.lastName;
@@ -248,18 +219,16 @@ function deleteUser(userId) {
     document.getElementById('deleteEmail').value = user.email;
     document.getElementById('deleteUsername').value = user.username;
 
-    // Устанавливаем выбранные роли
     const rolesSelect = document.getElementById('deleteRoles');
     Array.from(rolesSelect.options).forEach(option => {
         option.selected = user.roles.includes(option.value);
     });
 
-    // Показываем модальное окно
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     deleteModal.show();
 }
 
-// Обработчик отправки формы удаления
+// Обработчик для отправки формы и удаления юзера
 document.getElementById('deleteUserForm').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -267,7 +236,6 @@ document.getElementById('deleteUserForm').addEventListener('submit', function (e
     const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
 
-    // Отправляем AJAX запрос на удаление
     fetch(`/api/rest/${userId}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -280,10 +248,8 @@ document.getElementById('deleteUserForm').addEventListener('submit', function (e
             if (response.ok) {
                 // Закрываем модальное окно
                 const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                deleteModal.hide();
-
-                // Обновляем таблицу или удаляем строку
-                location.reload(); // Или более точечное обновление
+                deleteModal.hide()
+                removeUserFromTable(userId);
             } else {
                 alert('Ошибка при удалении пользователя');
             }
@@ -293,10 +259,9 @@ document.getElementById('deleteUserForm').addEventListener('submit', function (e
         });
 });
 
-// Вспомогательная функция для получения данных пользователя
+// Функция что бы получить данные юзера для форм из модалок
 function getUserData(userId) {
-    // Это может быть AJAX запрос или поиск данных в таблице
-    // Пример реализации через поиск в таблице:
+
     const row = document.querySelector(`tr[data-user-id="${userId}"]`);
     return {
         id: userId,
@@ -308,16 +273,14 @@ function getUserData(userId) {
     };
 }
 
-//Функция для отображение ошибок валидации
+//Функция для отображения ошибок валидации
 function showValidationErrors(errorData, formId = 'createUserForm') {
-    // 1. Находим форму, в которой показываем ошибки
     const form = document.getElementById(formId);
     if (!form) {
         console.error(`Форма с ID ${formId} не найдена!`);
         return;
     }
 
-    // 2. Сбрасываем предыдущие ошибки только внутри этой формы
     form.querySelectorAll('.invalid-feedback').forEach(el => {
         el.textContent = '';
         el.style.display = 'none';
@@ -326,9 +289,7 @@ function showValidationErrors(errorData, formId = 'createUserForm') {
         el.classList.remove('is-invalid');
     });
 
-    // 3. Обрабатываем ошибки
     Object.entries(errorData).forEach(([fieldName, errorMessage]) => {
-        // Ищем поле ТОЛЬКО внутри формы
         const input = form.querySelector(`[name="${fieldName}"]`);
 
         if (formId === 'editUserForm' && fieldName === 'password' && document.getElementById('editPassword').value === '') {
@@ -342,11 +303,7 @@ function showValidationErrors(errorData, formId = 'createUserForm') {
             if (errorElement && errorElement.classList.contains('invalid-feedback')) {
                 errorElement.textContent = errorMessage;
                 errorElement.style.display = 'block';
-            } else {
-                console.warn(`Для поля ${fieldName} не найден блок .invalid-feedback`);
             }
-        } else {
-            console.warn(`Поле ${fieldName} не найдено в форме ${formId}`);
         }
     });
 }
