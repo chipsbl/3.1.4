@@ -3,6 +3,7 @@ package ru.kata.spring.boot_security.demo.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -36,12 +37,14 @@ public class GlobalRestController {
 
     //Все пользователи
     @ResponseBody
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/api/rest")
     public List<User> getAllUsers() {
         return userService.getAll();
     }
 
     //Текущий аутентифицированный пользователь
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/rest/current-user")
     @ResponseBody
     public User getCurrentUser(Authentication authentication) {
@@ -50,6 +53,7 @@ public class GlobalRestController {
     }
 
     //Получение пользователя по его ID
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @ResponseBody
     @GetMapping("/api/rest/{id}")
     public User getUserById(@PathVariable Long id) {
@@ -59,6 +63,7 @@ public class GlobalRestController {
 
     //Отправка пользователя
     @PostMapping("/api/rest")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
     public ResponseEntity<?> createUser(@RequestBody @Valid User user) {
         try {
@@ -75,6 +80,7 @@ public class GlobalRestController {
 
     //Удаление пользователя по его ID
     @DeleteMapping("/api/rest/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         userService.delete(id);
@@ -85,6 +91,7 @@ public class GlobalRestController {
     //Обновление пользователя по его ID
     @ResponseBody
     @PutMapping("/api/rest/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> updateUser(@RequestBody @Valid User user, @PathVariable Long id, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             // Пропускаем ошибки валидации для пустого пароля
@@ -103,20 +110,9 @@ public class GlobalRestController {
         return ResponseEntity.ok(updateUser);
     }
 
-    //Админская страница
-    @GetMapping("/admin")
-    public String index() {
-        return "admin";
-    }
-
-    //Юзерная страница
-    @GetMapping("/user")
-    public String indexUser() {
-        return "user";
-    }
-
     //Получение пользователей в зависимости от роли аутентифицированного пользователя
     @ResponseBody
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/rest/visible-users")
     public ResponseEntity<List<User>> getVisibleUsers(Authentication authentication) {
         User currentUser = userRepository.findByUsername(authentication.getName());
